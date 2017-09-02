@@ -1,0 +1,100 @@
+<html>
+
+<head>
+    <title>Chat - Glic</title>
+    <style>
+        #mensagens,
+        #usuarios {
+            width: 500px;
+            float: left;
+            height: 400px;
+            border: 1px solid black;
+            padding: 5px;
+            overflow: scroll;
+            overflow-x: hidden;
+        }
+        
+        #usuarios {
+            width: 200px;
+        }
+        
+        #frmMensagens {
+            clear: both;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="telaUsername">
+        <form id="frmInformeUsuario">
+            <h3>Escreva seu nick:</h3>
+            <input type="text" size="30" id="nickname" placeholder="Digite seu nick" required>
+            <input type="submit" value="Entrar">
+        </form>
+    </div>
+
+    <div id="salaChat">
+        <div id="mensagens"></div>
+        <div id="usuarios"></div>
+        <form id="frmMensagens">
+            <input type="text" size="40" id="cpMensagem" required>
+            <input type="submit" value="Enviar">
+        </form>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        $(function() {
+            var socket = io.connect();
+
+            var salaChat = $("#salaChat");
+            var telaUsername = $("#telaUsername");
+            var frmInformeUsuario = $("#frmInformeUsuario");
+            var frmMensagens = $("#frmMensagens");
+            var cpMensagem = $("#cpMensagem");
+            var divMensagens = $("#mensagens");
+            var divUsuarios = $("#usuarios");
+            var nickname = $("#nickname");
+
+            salaChat.hide();
+
+            frmInformeUsuario.submit(function(e) {
+                e.preventDefault();
+                socket.emit("novo usuario", nickname.val(), function(data) {
+                    console.log(data)
+                    if (data.retorno) {
+                        telaUsername.hide();
+                        salaChat.show();
+                        cpMensagem.focus();
+                    } else {
+                        alert(data.msg);
+                        nickname.val("");
+                    }
+                });
+            });
+
+            frmMensagens.submit(function(e) {
+                e.preventDefault();
+                socket.emit("enviar mensagem", cpMensagem.val());
+                cpMensagem.val("");
+            });
+
+            socket.on("nova mensagem", function(data) {
+                divMensagens.append("<strong> " + data.nick + "</strong> " + data.msg + "<br>");
+            });
+
+            socket.on("atualiza usuarios", function(usuarios) {
+                console.log(usuarios)
+                var listaUsuarios = "<ul>";
+                $.each(usuarios, function(val, key) {
+                    listaUsuarios += "<li>" + key + "</li>";
+                });
+                listaUsuarios += "</ul>";
+                divUsuarios.empty().append(listaUsuarios);
+            });
+        });
+    </script>
+</body>
+
+</html>
